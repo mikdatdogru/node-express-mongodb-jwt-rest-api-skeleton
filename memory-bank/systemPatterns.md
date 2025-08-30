@@ -3,6 +3,7 @@
 ## Architectural Patterns
 
 ### 1. Layered Architecture (MVC+)
+
 ```
 ┌─── Routes Layer ────────────────────────────────────┐
 │  • HTTP routing ve middleware chain                │
@@ -32,7 +33,9 @@
 ```
 
 ### 2. Module Pattern
+
 Each controller creates its own ecosystem:
+
 ```
 /controllers/auth/
 ├── index.js           # Export aggregator
@@ -48,7 +51,9 @@ Each controller creates its own ecosystem:
 ```
 
 ### 3. Dynamic Loading Pattern (Express 5.x Compatible)
+
 System modules are loaded dynamically:
+
 ```javascript
 // Routes auto-loading (Express 5.x compatible)
 fs.readdirSync(routesPath).filter((file) => {
@@ -68,7 +73,9 @@ fs.readdirSync(modelsPath).filter((file) => {
 ## Design Patterns
 
 ### 1. Factory Pattern
+
 Controller helpers use factory pattern:
+
 ```javascript
 // Error object factory
 const buildErrObject = (code, message) => ({
@@ -84,7 +91,9 @@ const buildSuccObject = (message, data = {}) => ({
 ```
 
 ### 2. Middleware Pattern
+
 Express.js middleware chain pattern:
+
 ```javascript
 // Authentication middleware chain
 router.post('/login', 
@@ -103,7 +112,9 @@ router.get('/token',
 ```
 
 ### 3. Repository Pattern (Mongoose 8.x Async/Await)
+
 Database operations abstracted through helpers:
+
 ```javascript
 // Modern async/await only operations (Mongoose 8.x)
 const createItem = async (collection, data) => {
@@ -121,7 +132,9 @@ const deleteItem = async (collection, id) => {
 ```
 
 ### 4. Observer Pattern (Mongoose 8.x)
+
 Modern Mongoose middleware hooks:
+
 ```javascript
 UserSchema.pre('save', async function (next) {
   // Modern async/await password hashing (bcrypt 6.0.0)
@@ -140,6 +153,7 @@ UserSchema.pre('save', async function (next) {
 ## Security Patterns
 
 ### 1. Defense in Depth
+
 ```
 ┌─── Network Layer ──────────────────────────────────┐
 │  • CORS configuration                             │
@@ -159,6 +173,7 @@ UserSchema.pre('save', async function (next) {
 ```
 
 ### 2. JWT Token Pattern (Enhanced Security)
+
 ```javascript
 // Modern double encryption pattern (jsonwebtoken 9.0.2)
 const encryptedPayload = encrypt(payload)
@@ -178,6 +193,7 @@ try {
 ```
 
 ### 3. Brute Force Protection Pattern
+
 ```javascript
 // Login attempt tracking
 const checkLoginAttemptsAndBlockExpires = async (user) => {
@@ -194,6 +210,7 @@ const checkLoginAttemptsAndBlockExpires = async (user) => {
 ## Data Patterns
 
 ### 1. Schema-First Design
+
 ```javascript
 const UserSchema = new mongoose.Schema({
   email: {
@@ -216,6 +233,7 @@ const UserSchema = new mongoose.Schema({
 ```
 
 ### 2. Pagination Pattern
+
 ```javascript
 const listInitOptions = (req) => ({
   sort: buildSort(req),
@@ -226,7 +244,9 @@ const listInitOptions = (req) => ({
 ```
 
 ### 3. Soft Delete Pattern (Implicit)
+
 Block/unblock pattern instead of hard delete:
+
 ```javascript
 const blockUser = async (user) => {
   user.blockExpires = addMinutes(new Date(), HOURS_TO_BLOCK * 60)
@@ -237,6 +257,7 @@ const blockUser = async (user) => {
 ## Error Handling Patterns
 
 ### 1. Centralized Error Handling
+
 ```javascript
 const handleError = (res, err) => {
   const statusCode = err.code || 422
@@ -249,6 +270,7 @@ const handleError = (res, err) => {
 ```
 
 ### 2. Error Context Pattern
+
 ```javascript
 // Controller level error handling
 try {
@@ -260,6 +282,7 @@ try {
 ```
 
 ### 3. Validation Error Pattern
+
 ```javascript
 const validateResult = (req, res, next) => {
   const errors = validationResult(req)
@@ -276,6 +299,7 @@ const validateResult = (req, res, next) => {
 ## Component Interaction Patterns
 
 ### 1. Request Flow Pattern
+
 ```
 HTTP Request →
 Route Handler →
@@ -288,6 +312,7 @@ HTTP Response
 ```
 
 ### 2. Authentication Flow Pattern
+
 ```
 Login Request →
 Input Validation →
@@ -300,6 +325,7 @@ Response with Token
 ```
 
 ### 3. Authorization Flow Pattern
+
 ```
 Protected Request →
 Token Extraction →
