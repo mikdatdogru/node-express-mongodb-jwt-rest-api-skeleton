@@ -4,15 +4,13 @@ const { buildErrObject } = require('../../middleware/utils')
  * Creates a new item in database
  * @param {Object} req - request object
  */
-const createItem = (req = {}, model = {}) => {
-  return new Promise((resolve, reject) => {
-    model.create(req, (err, item) => {
-      if (err) {
-        reject(buildErrObject(422, err.message))
-      }
-      resolve(item)
-    })
-  })
+const createItem = async (req = {}, model = {}) => {
+  try {
+    const item = await model.create(req)
+    return item
+  } catch (error) {
+    throw buildErrObject(422, error.message)
+  }
 }
 
 module.exports = { createItem }

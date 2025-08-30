@@ -5,12 +5,10 @@ const { buildErrObject } = require('../../../middleware/utils')
  * @param {Object} user - user object
  */
 const userIsBlocked = (user = {}) => {
-  return new Promise((resolve, reject) => {
-    if (user.blockExpires > new Date()) {
-      return reject(buildErrObject(409, 'BLOCKED_USER'))
-    }
-    resolve(true)
-  })
+  if (user.blockExpires > new Date()) {
+    throw buildErrObject(409, 'BLOCKED_USER')
+  }
+  return true
 }
 
 module.exports = { userIsBlocked }

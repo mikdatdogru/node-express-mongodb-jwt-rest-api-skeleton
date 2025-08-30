@@ -7,15 +7,13 @@ const { buildErrObject } = require('./buildErrObject')
  * @param {string} message - message
  */
 const itemNotFound = (err = {}, item = {}, message = 'NOT_FOUND') => {
-  return new Promise((resolve, reject) => {
-    if (err) {
-      return reject(buildErrObject(422, err.message))
-    }
-    if (!item) {
-      return reject(buildErrObject(404, message))
-    }
-    resolve()
-  })
+  if (err) {
+    throw buildErrObject(422, err.message)
+  }
+  if (!item) {
+    throw buildErrObject(404, message)
+  }
+  return true
 }
 
 module.exports = { itemNotFound }

@@ -1,15 +1,24 @@
-const eslintJs = require('@eslint/js')
-const prettierConfig = require('eslint-config-prettier')
-const prettierPlugin = require('eslint-plugin-prettier')
+import eslintJs from '@eslint/js'
+import prettierConfig from 'eslint-config-prettier'
+import prettierPlugin from 'eslint-plugin-prettier'
 
-module.exports = [
+export default [
   eslintJs.configs.recommended,
   prettierConfig,
   {
     files: ['**/*.js'],
     languageOptions: {
       ecmaVersion: 'latest',
-      sourceType: 'script',
+      sourceType: 'module',
+      parser: await import('@babel/eslint-parser'),
+      parserOptions: {
+        requireConfigFile: false,
+        babelOptions: {
+          babelrc: false,
+          configFile: false,
+          presets: ['@babel/preset-env']
+        }
+      },
       globals: {
         console: 'readonly',
         process: 'readonly',

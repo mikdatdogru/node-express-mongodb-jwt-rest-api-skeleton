@@ -6,28 +6,26 @@ const { buildErrObject } = require('../../middleware/utils')
  * @param {string} id - user id
  * @param {string} email - user email
  */
-const emailExistsExcludingMyself = (id = '', email = '') => {
-  return new Promise((resolve, reject) => {
-    User.findOne(
-      {
-        email,
-        _id: {
-          $ne: id
-        }
-      },
-      async (err, item) => {
-        if (err) {
-          return reject(buildErrObject(422, err.message))
-        }
-
-        if (item) {
-          return reject(buildErrObject(422, 'EMAIL_ALREADY_EXISTS'))
-        }
-
-        resolve(false)
+const emailExistsExcludingMyself = async (id = '', email = '') => {
+  try {
+    const item = await User.findOne({
+      email,
+      _id: {
+        $ne: id
       }
-    )
-  })
+    })
+
+    if (item) {
+      throw buildErrObject(422, 'EMAIL_ALREADY_EXISTS')
+    }
+
+    return false
+  } catch (err) {
+    if (err.code) {
+      throw err
+    }
+    throw buildErrObject(422, err.message)
+  }
 }
 
 module.exports = { emailExistsExcludingMyself }

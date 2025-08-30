@@ -6,20 +6,17 @@ const { itemNotFound, buildErrObject } = require('../../../middleware/utils')
  * @param {Object} data - data object
  * @param {*} next - next callback
  */
-const checkPermissions = ({ id = '', roles = [] }, next) => {
-  return new Promise((resolve, reject) => {
-    User.findById(id, async (err, result) => {
-      try {
-        await itemNotFound(err, result, 'USER_NOT_FOUND')
-        if (roles.indexOf(result.role) > -1) {
-          return resolve(next())
-        }
-        reject(buildErrObject(401, 'UNAUTHORIZED'))
-      } catch (error) {
-        reject(error)
-      }
-    })
-  })
+const checkPermissions = async ({ id = '', roles = [] }, next) => {
+  try {
+    const result = await User.findById(id)
+    await itemNotFound(null, result, 'USER_NOT_FOUND')
+    if (roles.indexOf(result.role) > -1) {
+      return next()
+    }
+    throw buildErrObject(401, 'UNAUTHORIZED')
+  } catch (error) {
+    throw error
+  }
 }
 
 module.exports = { checkPermissions }

@@ -5,22 +5,14 @@ const { itemNotFound } = require('../../../middleware/utils')
  * Finds user by email to reset password
  * @param {string} email - user email
  */
-const findUserToResetPassword = (email = '') => {
-  return new Promise((resolve, reject) => {
-    User.findOne(
-      {
-        email
-      },
-      async (err, user) => {
-        try {
-          await itemNotFound(err, user, 'NOT_FOUND')
-          resolve(user)
-        } catch (error) {
-          reject(error)
-        }
-      }
-    )
-  })
+const findUserToResetPassword = async (email = '') => {
+  try {
+    const user = await User.findOne({ email })
+    await itemNotFound(null, user, 'NOT_FOUND')
+    return user
+  } catch (error) {
+    throw error
+  }
 }
 
 module.exports = { findUserToResetPassword }

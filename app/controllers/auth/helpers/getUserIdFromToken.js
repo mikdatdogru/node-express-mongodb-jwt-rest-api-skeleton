@@ -6,16 +6,14 @@ const { decrypt } = require('../../../middleware/auth')
  * Gets user id from token
  * @param {string} token - Encrypted and encoded token
  */
-const getUserIdFromToken = (token = '') => {
-  return new Promise((resolve, reject) => {
+const getUserIdFromToken = async (token = '') => {
+  try {
     // Decrypts, verifies and decode token
-    jwt.verify(decrypt(token), process.env.JWT_SECRET, (err, decoded) => {
-      if (err) {
-        reject(buildErrObject(409, 'BAD_TOKEN'))
-      }
-      resolve(decoded.data._id)
-    })
-  })
+    const decoded = jwt.verify(decrypt(token), process.env.JWT_SECRET)
+    return decoded.data._id
+  } catch (unusedError) {
+    throw buildErrObject(409, 'BAD_TOKEN')
+  }
 }
 
 module.exports = { getUserIdFromToken }

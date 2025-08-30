@@ -6,21 +6,19 @@ const { buildErrObject } = require('../../../middleware/utils')
  * Registers a new user in database
  * @param {Object} req - request object
  */
-const registerUser = (req = {}) => {
-  return new Promise((resolve, reject) => {
+const registerUser = async (req = {}) => {
+  try {
     const user = new User({
       name: req.name,
       email: req.email,
       password: req.password,
       verification: uuid.v4()
     })
-    user.save((err, item) => {
-      if (err) {
-        reject(buildErrObject(422, err.message))
-      }
-      resolve(item)
-    })
-  })
+    const item = await user.save()
+    return item
+  } catch (error) {
+    throw buildErrObject(422, error.message)
+  }
 }
 
 module.exports = { registerUser }

@@ -1,6 +1,7 @@
-require('dotenv-safe').config()
+// Load environment variables automatically based on NODE_ENV
+require('dotenv-flow').config()
 const express = require('express')
-const bodyParser = require('body-parser')
+// body-parser is now built-in to Express 5.x
 const morgan = require('morgan')
 const compression = require('compression')
 const helmet = require('helmet')
@@ -19,31 +20,39 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'))
 }
 
-// Redis cache enabled by env variable
+// Modern Redis cache with ioredis
 if (process.env.USE_REDIS === 'true') {
-  const getExpeditiousCache = require('express-expeditious')
-  const cache = getExpeditiousCache({
-    namespace: 'expresscache',
-    defaultTtl: '1 minute',
-    engine: require('expeditious-engine-redis')({
-      redis: {
-        host: process.env.REDIS_HOST,
-        port: process.env.REDIS_PORT
-      }
+  const { initializeRedis } = require('./app/middleware/cache')
+
+  // Initialize Redis connection
+  const redisClient = initializeRedis()
+
+  if (redisClient) {
+    console.log('🚀 Redis cache initialized with ioredis')
+
+    // Graceful shutdown
+    process.on('SIGTERM', async () => {
+      const { closeRedis } = require('./app/middleware/cache')
+      await closeRedis()
     })
-  })
-  app.use(cache)
+
+    process.on('SIGINT', async () => {
+      const { closeRedis } = require('./app/middleware/cache')
+      await closeRedis()
+      process.exit(0)
+    })
+  }
 }
 
-// for parsing json
+// for parsing json (Express 5.x built-in)
 app.use(
-  bodyParser.json({
+  express.json({
     limit: '20mb'
   })
 )
-// for parsing application/x-www-form-urlencoded
+// for parsing application/x-www-form-urlencoded (Express 5.x built-in)
 app.use(
-  bodyParser.urlencoded({
+  express.urlencoded({
     limit: '20mb',
     extended: true
   })

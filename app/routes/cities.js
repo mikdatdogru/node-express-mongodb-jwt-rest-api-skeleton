@@ -8,6 +8,7 @@ const requireAuth = passport.authenticate('jwt', {
 const trimRequest = require('trim-request')
 
 const { roleAuthorization } = require('../controllers/auth')
+const { cacheMiddleware, InvalidationPresets } = require('../middleware/cache')
 
 const {
   getAllCities,
@@ -32,7 +33,11 @@ const {
 /*
  * Get all items route
  */
-router.get('/all', getAllCities)
+router.get(
+  '/all',
+  cacheMiddleware({ ttl: 600, keyPrefix: 'cities:all' }),
+  getAllCities
+)
 
 /*
  * Get items route
@@ -42,6 +47,7 @@ router.get(
   requireAuth,
   roleAuthorization(['admin']),
   trimRequest.all,
+  cacheMiddleware({ ttl: 300, keyPrefix: 'cities:list' }),
   getCities
 )
 
@@ -54,6 +60,7 @@ router.post(
   roleAuthorization(['admin']),
   trimRequest.all,
   validateCreateCity,
+  InvalidationPresets.citiesCreate(),
   createCity
 )
 
@@ -66,6 +73,7 @@ router.get(
   roleAuthorization(['admin']),
   trimRequest.all,
   validateGetCity,
+  cacheMiddleware({ ttl: 600, keyPrefix: 'cities:detail' }),
   getCity
 )
 
@@ -78,6 +86,7 @@ router.patch(
   roleAuthorization(['admin']),
   trimRequest.all,
   validateUpdateCity,
+  InvalidationPresets.citiesUpdate(),
   updateCity
 )
 
@@ -90,6 +99,7 @@ router.delete(
   roleAuthorization(['admin']),
   trimRequest.all,
   validateDeleteCity,
+  InvalidationPresets.citiesDelete(),
   deleteCity
 )
 

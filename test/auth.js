@@ -3,12 +3,10 @@
 process.env.NODE_ENV = 'test'
 
 const User = require('../app/models/user')
-const faker = require('faker')
-const chai = require('chai')
-const chaiHttp = require('chai-http')
+const { faker } = require('@faker-js/faker')
+const request = require('supertest')
+const { expect } = require('chai')
 const server = require('../server')
-// eslint-disable-next-line no-unused-vars
-const should = chai.should()
 const loginDetails = {
   email: 'admin@admin.com',
   password: '12345'
@@ -29,238 +27,202 @@ const badLoginDetails = {
   password: '12345'
 }
 
-chai.use(chaiHttp)
-
 describe('*********** AUTH ***********', () => {
   describe('/GET /', () => {
-    it('it should GET home API url', (done) => {
-      chai
-        .request(server)
-        .get('/')
-        .end((err, res) => {
-          res.should.have.status(200)
-          done()
-        })
+    it('should GET home API url', async () => {
+      await request(server).get('/').expect(200)
     })
   })
 
   describe('/GET /404url', () => {
-    it('it should GET 404 url', (done) => {
-      chai
-        .request(server)
+    it('should GET 404 url', async () => {
+      const response = await request(server)
         .get('/404url')
-        .end((err, res) => {
-          res.should.have.status(404)
-          res.body.should.be.an('object')
-          done()
-        })
+        .expect(404)
+        .expect('Content-Type', /json/)
+
+      expect(response.body).to.be.an('object')
     })
   })
 
   describe('/POST login', () => {
-    it('it should GET token', (done) => {
-      chai
-        .request(server)
+    it('should GET token', async () => {
+      const response = await request(server)
         .post('/login')
         .send(loginDetails)
-        .end((err, res) => {
-          res.should.have.status(200)
-          res.body.should.be.an('object')
-          res.body.should.have.property('token')
-          token = res.body.token
-          done()
-        })
+        .expect(200)
+        .expect('Content-Type', /json/)
+
+      expect(response.body).to.be.an('object')
+      expect(response.body).to.have.property('token')
+      token = response.body.token
     })
   })
 
   describe('/POST register', () => {
-    it('it should POST register', (done) => {
+    it('should POST register', async () => {
       const user = {
-        name: faker.random.words(),
+        name: faker.lorem.words(),
         email,
-        password: faker.random.words()
+        password: faker.lorem.words()
       }
-      chai
-        .request(server)
+      const response = await request(server)
         .post('/register')
         .send(user)
-        .end((err, res) => {
-          res.should.have.status(201)
-          res.body.should.be.an('object')
-          res.body.should.include.keys('token', 'user')
-          createdID.push(res.body.user._id)
-          verification = res.body.user.verification
-          done()
-        })
+        .expect(201)
+        .expect('Content-Type', /json/)
+
+      expect(response.body).to.be.an('object')
+      expect(response.body).to.include.keys('token', 'user')
+      createdID.push(response.body.user._id)
+      verification = response.body.user.verification
     })
-    it('it should NOT POST a register if email already exists', (done) => {
+    it('should NOT POST a register if email already exists', async () => {
       const user = {
-        name: faker.random.words(),
+        name: faker.lorem.words(),
         email,
-        password: faker.random.words()
+        password: faker.lorem.words()
       }
-      chai
-        .request(server)
+      const response = await request(server)
         .post('/register')
         .send(user)
-        .end((err, res) => {
-          res.should.have.status(422)
-          res.body.should.be.a('object')
-          res.body.should.have.property('errors')
-          done()
-        })
+        .expect(422)
+        .expect('Content-Type', /json/)
+
+      expect(response.body).to.be.an('object')
+      expect(response.body).to.have.property('errors')
     })
   })
 
   describe('/POST verify', () => {
-    it('it should POST verify', (done) => {
-      chai
-        .request(server)
+    it('should POST verify', async () => {
+      const response = await request(server)
         .post('/verify')
         .send({
           id: verification
         })
-        .end((err, res) => {
-          res.should.have.status(200)
-          res.body.should.be.an('object')
-          res.body.should.include.keys('email', 'verified')
-          res.body.verified.should.equal(true)
-          done()
-        })
+        .expect(200)
+        .expect('Content-Type', /json/)
+
+      expect(response.body).to.be.an('object')
+      expect(response.body).to.include.keys('email', 'verified')
+      expect(response.body.verified).to.equal(true)
     })
   })
 
   describe('/POST forgot', () => {
-    it('it should POST forgot', (done) => {
-      chai
-        .request(server)
+    it('should POST forgot', async () => {
+      const response = await request(server)
         .post('/forgot')
         .send({
           email
         })
-        .end((err, res) => {
-          res.should.have.status(200)
-          res.body.should.be.an('object')
-          res.body.should.include.keys('msg', 'verification')
-          verificationForgot = res.body.verification
-          done()
-        })
+        .expect(200)
+        .expect('Content-Type', /json/)
+
+      expect(response.body).to.be.an('object')
+      expect(response.body).to.include.keys('msg', 'verification')
+      verificationForgot = response.body.verification
     })
   })
 
   describe('/POST reset', () => {
-    it('it should POST reset', (done) => {
-      chai
-        .request(server)
+    it('should POST reset password', async () => {
+      const response = await request(server)
         .post('/reset')
         .send({
           id: verificationForgot,
           password: '12345'
         })
-        .end((err, res) => {
-          res.should.have.status(200)
-          res.body.should.be.a('object')
-          res.body.should.have.property('msg').eql('PASSWORD_CHANGED')
-          done()
-        })
+        .expect(200)
+        .expect('Content-Type', /json/)
+
+      expect(response.body).to.be.an('object')
+      expect(response.body).to.have.property('msg', 'PASSWORD_CHANGED')
     })
   })
 
   describe('/GET token', () => {
-    it('it should NOT be able to consume the route since no token was sent', (done) => {
-      chai
-        .request(server)
-        .get('/token')
-        .end((err, res) => {
-          res.should.have.status(401)
-          done()
-        })
+    it('should NOT be able to consume the route since no token was sent', async () => {
+      await request(server).get('/token').expect(401)
     })
-    it('it should GET a fresh token', (done) => {
-      chai
-        .request(server)
+    it('should GET a fresh token', async () => {
+      const response = await request(server)
         .get('/token')
         .set('Authorization', `Bearer ${token}`)
-        .end((err, res) => {
-          res.should.have.status(200)
-          res.body.should.be.an('object')
-          res.body.should.have.property('token')
-          done()
-        })
+        .expect(200)
+        .expect('Content-Type', /json/)
+
+      expect(response.body).to.be.an('object')
+      expect(response.body).to.have.property('token')
     })
   })
 
   describe('/POST register', () => {
-    it('it should POST register', (done) => {
-      chai
-        .request(server)
+    it('should POST register', async () => {
+      const response = await request(server)
         .post('/register')
         .send(badUser)
-        .end((err, res) => {
-          res.should.have.status(201)
-          res.body.should.be.an('object')
-          res.body.should.include.keys('token', 'user')
-          createdID.push(res.body.user._id)
-          done()
-        })
+        .expect(201)
+        .expect('Content-Type', /json/)
+
+      expect(response.body).to.be.an('object')
+      expect(response.body).to.include.keys('token', 'user')
+      createdID.push(response.body.user._id)
     })
   })
 
   describe('/POST login', () => {
     for (let x = 1; x < failedLoginAttempts + 1; x++) {
-      it(`it should NOT POST login after password fail #${x}`, (done) => {
-        chai
-          .request(server)
+      it(`should NOT POST login after password fail #${x}`, async () => {
+        const response = await request(server)
           .post('/login')
           .send(badLoginDetails)
-          .end((err, res) => {
-            res.should.have.status(409)
-            res.body.should.be.a('object')
-            res.body.should.have.property('errors').that.has.property('msg')
-            res.body.errors.should.have.property('msg').eql('WRONG_PASSWORD')
-            done()
-          })
+          .expect(409)
+          .expect('Content-Type', /json/)
+
+        expect(response.body).to.be.an('object')
+        expect(response.body)
+          .to.have.property('errors')
+          .that.has.property('msg')
+        expect(response.body.errors).to.have.property('msg', 'WRONG_PASSWORD')
       })
     }
 
-    it('it should NOT POST login after password fail #6 and be blocked', (done) => {
-      chai
-        .request(server)
+    it('should NOT POST login after password fail #6 and be blocked', async () => {
+      const response = await request(server)
         .post('/login')
         .send(badLoginDetails)
-        .end((err, res) => {
-          res.should.have.status(409)
-          res.body.should.be.a('object')
-          res.body.should.have.property('errors').that.has.property('msg')
-          res.body.errors.should.have.property('msg').eql('BLOCKED_USER')
-          done()
-        })
+        .expect(409)
+        .expect('Content-Type', /json/)
+
+      expect(response.body).to.be.an('object')
+      expect(response.body).to.have.property('errors').that.has.property('msg')
+      expect(response.body.errors).to.have.property('msg', 'BLOCKED_USER')
     })
 
-    it('it should NOT POST login after being blocked sending post with correct password', (done) => {
-      chai
-        .request(server)
+    it('should NOT POST login after being blocked sending post with correct password', async () => {
+      const response = await request(server)
         .post('/login')
         .send({
           email: badUser.email,
           password: badUser.password
         })
-        .end((err, res) => {
-          res.should.have.status(409)
-          res.body.should.be.a('object')
-          res.body.should.have.property('errors').that.has.property('msg')
-          res.body.errors.should.have.property('msg').eql('BLOCKED_USER')
-          done()
-        })
+        .expect(409)
+        .expect('Content-Type', /json/)
+
+      expect(response.body).to.be.an('object')
+      expect(response.body).to.have.property('errors').that.has.property('msg')
+      expect(response.body.errors).to.have.property('msg', 'BLOCKED_USER')
     })
   })
-  after(() => {
-    createdID.forEach((id) => {
-      User.findByIdAndRemove(id, (err) => {
-        if (err) {
-          console.log(err)
-        }
-      })
-    })
+  after(async () => {
+    for (const id of createdID) {
+      try {
+        await User.findByIdAndDelete(id)
+      } catch (err) {
+        console.log(err)
+      }
+    }
   })
 })

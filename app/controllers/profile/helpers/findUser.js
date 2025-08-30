@@ -5,17 +5,14 @@ const { itemNotFound } = require('../../../middleware/utils')
  * Finds user by id
  * @param {string} id - user id
  */
-const findUser = (id = '') => {
-  return new Promise((resolve, reject) => {
-    User.findById(id, 'password email', async (err, user) => {
-      try {
-        await itemNotFound(err, user, 'USER_DOES_NOT_EXIST')
-        resolve(user)
-      } catch (error) {
-        reject(error)
-      }
-    })
-  })
+const findUser = async (id = '') => {
+  try {
+    const user = await User.findById(id, 'password email')
+    await itemNotFound(null, user, 'USER_DOES_NOT_EXIST')
+    return user
+  } catch (error) {
+    throw error
+  }
 }
 
 module.exports = { findUser }

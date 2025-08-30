@@ -3,12 +3,10 @@
 process.env.NODE_ENV = 'test'
 
 const User = require('../app/models/user')
-const faker = require('faker')
-const chai = require('chai')
-const chaiHttp = require('chai-http')
+const { faker } = require('@faker-js/faker')
+const request = require('supertest')
+const { expect } = require('chai')
 const server = require('../server')
-// eslint-disable-next-line no-unused-vars
-const should = chai.should()
 const loginDetails = {
   admin: {
     id: '5aa1c2c35ef7a4e97b5e995a',
@@ -29,171 +27,150 @@ const tokens = {
 const email = faker.internet.email()
 const createdID = []
 
-chai.use(chaiHttp)
-
 describe('*********** USERS ***********', () => {
   describe('/POST login', () => {
-    it('it should GET token as admin', (done) => {
-      chai
-        .request(server)
+    it('should GET token as admin', async () => {
+      const response = await request(server)
         .post('/login')
         .send(loginDetails.admin)
-        .end((err, res) => {
-          res.should.have.status(200)
-          res.body.should.be.an('object')
-          res.body.should.have.property('token')
-          tokens.admin = res.body.token
-          done()
-        })
+        .expect(200)
+        .expect('Content-Type', /json/)
+
+      expect(response.body).to.be.an('object')
+      expect(response.body).to.have.property('token')
+      tokens.admin = response.body.token
     })
-    it('it should GET token as user', (done) => {
-      chai
-        .request(server)
+    it('should GET token as user', async () => {
+      const response = await request(server)
         .post('/login')
         .send(loginDetails.user)
-        .end((err, res) => {
-          res.should.have.status(200)
-          res.body.should.be.an('object')
-          res.body.should.have.property('token')
-          tokens.user = res.body.token
-          done()
-        })
+        .expect(200)
+        .expect('Content-Type', /json/)
+
+      expect(response.body).to.be.an('object')
+      expect(response.body).to.have.property('token')
+      tokens.user = response.body.token
     })
   })
   describe('/GET users', () => {
-    it('it should NOT be able to consume the route since no token was sent', (done) => {
-      chai
-        .request(server)
-        .get('/users')
-        .end((err, res) => {
-          res.should.have.status(401)
-          done()
-        })
+    it('should NOT be able to consume the route since no token was sent', async () => {
+      await request(server).get('/users').expect(401)
     })
-    it('it should GET all the users', (done) => {
-      chai
-        .request(server)
+    it('should GET all the users', async () => {
+      const response = await request(server)
         .get('/users')
         .set('Authorization', `Bearer ${tokens.admin}`)
-        .end((err, res) => {
-          res.should.have.status(200)
-          res.body.should.be.an('object')
-          res.body.docs.should.be.a('array')
-          done()
-        })
+        .expect(200)
+        .expect('Content-Type', /json/)
+
+      expect(response.body).to.be.an('object')
+      expect(response.body.docs).to.be.an('array')
     })
-    it('it should GET the users with filters', (done) => {
-      chai
-        .request(server)
+    it('should GET the users with filters', async () => {
+      const response = await request(server)
         .get('/users?filter=admin&fields=name,email,city,country,phone')
         .set('Authorization', `Bearer ${tokens.admin}`)
-        .end((err, res) => {
-          res.should.have.status(200)
-          res.body.should.be.an('object')
-          res.body.docs.should.be.a('array')
-          res.body.docs.should.have.lengthOf(1)
-          res.body.docs[0].should.have.property('email').eql('admin@admin.com')
-          done()
-        })
+        .expect(200)
+        .expect('Content-Type', /json/)
+
+      expect(response.body).to.be.an('object')
+      expect(response.body.docs).to.be.an('array')
+      expect(response.body.docs).to.have.lengthOf(1)
+      expect(response.body.docs[0]).to.have.property('email', 'admin@admin.com')
     })
   })
   describe('/POST user', () => {
-    it('it should NOT POST a user without name', (done) => {
+    it('should NOT POST a user without name', async () => {
       const user = {}
-      chai
-        .request(server)
+      const response = await request(server)
         .post('/users')
         .set('Authorization', `Bearer ${tokens.admin}`)
         .send(user)
-        .end((err, res) => {
-          res.should.have.status(422)
-          res.body.should.be.a('object')
-          res.body.should.have.property('errors')
-          done()
-        })
+        .expect(422)
+        .expect('Content-Type', /json/)
+
+      expect(response.body).to.be.an('object')
+      expect(response.body).to.have.property('errors')
     })
-    it('it should POST a user ', (done) => {
+    it('should POST a user', async () => {
       const user = {
-        name: faker.random.words(),
+        name: faker.lorem.words(),
         email,
-        password: faker.random.words(),
+        password: faker.lorem.words(),
         role: 'admin',
         urlTwitter: faker.internet.url(),
         urlGitHub: faker.internet.url(),
-        phone: faker.phone.phoneNumber(),
-        city: faker.random.words(),
-        country: faker.random.words()
+        phone: faker.phone.number(),
+        city: faker.lorem.words(),
+        country: faker.lorem.words()
       }
-      chai
-        .request(server)
+      const response = await request(server)
         .post('/users')
         .set('Authorization', `Bearer ${tokens.admin}`)
         .send(user)
-        .end((err, res) => {
-          res.should.have.status(201)
-          res.body.should.be.a('object')
-          res.body.should.include.keys('_id', 'name', 'email', 'verification')
-          createdID.push(res.body._id)
-          done()
-        })
+        .expect(201)
+        .expect('Content-Type', /json/)
+
+      expect(response.body).to.be.an('object')
+      expect(response.body).to.include.keys(
+        '_id',
+        'name',
+        'email',
+        'verification'
+      )
+      createdID.push(response.body._id)
     })
-    it('it should NOT POST a user with email that already exists', (done) => {
+    it('should NOT POST a user with email that already exists', async () => {
       const user = {
-        name: faker.random.words(),
+        name: faker.lorem.words(),
         email,
-        password: faker.random.words(),
+        password: faker.lorem.words(),
         role: 'admin'
       }
-      chai
-        .request(server)
+      const response = await request(server)
         .post('/users')
         .set('Authorization', `Bearer ${tokens.admin}`)
         .send(user)
-        .end((err, res) => {
-          res.should.have.status(422)
-          res.body.should.be.a('object')
-          res.body.should.have.property('errors')
-          done()
-        })
+        .expect(422)
+        .expect('Content-Type', /json/)
+
+      expect(response.body).to.be.an('object')
+      expect(response.body).to.have.property('errors')
     })
-    it('it should NOT POST a user with not known role', (done) => {
+    it('should NOT POST a user with not known role', async () => {
       const user = {
-        name: faker.random.words(),
+        name: faker.lorem.words(),
         email,
-        password: faker.random.words(),
-        role: faker.random.words()
+        password: faker.lorem.words(),
+        role: faker.lorem.words()
       }
-      chai
-        .request(server)
+      const response = await request(server)
         .post('/users')
         .set('Authorization', `Bearer ${tokens.admin}`)
         .send(user)
-        .end((err, res) => {
-          res.should.have.status(422)
-          res.body.should.be.a('object')
-          res.body.should.have.property('errors')
-          done()
-        })
+        .expect(422)
+        .expect('Content-Type', /json/)
+
+      expect(response.body).to.be.an('object')
+      expect(response.body).to.have.property('errors')
     })
   })
   describe('/GET/:id user', () => {
-    it('it should GET a user by the given id', (done) => {
+    it('should GET a user by the given id', async () => {
       const id = createdID.slice(-1).pop()
-      chai
-        .request(server)
+      const response = await request(server)
         .get(`/users/${id}`)
         .set('Authorization', `Bearer ${tokens.admin}`)
-        .end((error, res) => {
-          res.should.have.status(200)
-          res.body.should.be.a('object')
-          res.body.should.have.property('name')
-          res.body.should.have.property('_id').eql(id)
-          done()
-        })
+        .expect(200)
+        .expect('Content-Type', /json/)
+
+      expect(response.body).to.be.an('object')
+      expect(response.body).to.have.property('name')
+      expect(response.body).to.have.property('_id', id)
     })
   })
   describe('/PATCH/:id user', () => {
-    it('it should UPDATE a user given the id', (done) => {
+    it('should UPDATE a user given the id', async () => {
       const id = createdID.slice(-1).pop()
       const user = {
         name: 'JS123456',
@@ -201,109 +178,109 @@ describe('*********** USERS ***********', () => {
         role: 'admin',
         urlTwitter: faker.internet.url(),
         urlGitHub: faker.internet.url(),
-        phone: faker.phone.phoneNumber(),
-        city: faker.random.words(),
-        country: faker.random.words()
+        phone: faker.phone.number(),
+        city: faker.lorem.words(),
+        country: faker.lorem.words()
       }
-      chai
-        .request(server)
+      const response = await request(server)
         .patch(`/users/${id}`)
         .set('Authorization', `Bearer ${tokens.admin}`)
         .send(user)
-        .end((error, res) => {
-          res.should.have.status(200)
-          res.body.should.be.a('object')
-          res.body.should.have.property('_id').eql(id)
-          res.body.should.have.property('name').eql('JS123456')
-          res.body.should.have
-            .property('email')
-            .eql('emailthatalreadyexists@email.com')
-          createdID.push(res.body._id)
-          done()
-        })
+        .expect(200)
+        .expect('Content-Type', /json/)
+
+      expect(response.body).to.be.an('object')
+      expect(response.body).to.have.property('_id', id)
+      expect(response.body).to.have.property('name', 'JS123456')
+      expect(response.body).to.have.property(
+        'email',
+        'emailthatalreadyexists@email.com'
+      )
+      createdID.push(response.body._id)
     })
-    it('it should NOT UPDATE a user with email that already exists', (done) => {
+    it('should NOT UPDATE a user with email that already exists', async () => {
       const id = createdID.slice(-1).pop()
       const user = {
-        name: faker.random.words(),
+        name: faker.lorem.words(),
         email: 'admin@admin.com',
         role: 'admin'
       }
-      chai
-        .request(server)
+      const response = await request(server)
         .patch(`/users/${id}`)
         .set('Authorization', `Bearer ${tokens.admin}`)
         .send(user)
-        .end((err, res) => {
-          res.should.have.status(422)
-          res.body.should.be.a('object')
-          res.body.should.have.property('errors')
-          done()
-        })
+        .expect(422)
+        .expect('Content-Type', /json/)
+
+      expect(response.body).to.be.an('object')
+      expect(response.body).to.have.property('errors')
     })
-    it('it should NOT UPDATE another user if not an admin', (done) => {
+    it('should NOT UPDATE another user if not an admin', async () => {
       const id = createdID.slice(-1).pop()
       const user = {
-        name: faker.random.words(),
+        name: faker.lorem.words(),
         email: 'toto@toto.com',
         role: 'user'
       }
-      chai
-        .request(server)
+      const response = await request(server)
         .patch(`/users/${id}`)
         .set('Authorization', `Bearer ${tokens.user}`)
         .send(user)
-        .end((err, res) => {
-          res.should.have.status(401)
-          res.body.should.be.a('object')
-          res.body.should.have.property('errors')
-          done()
-        })
+        .expect(401)
+        .expect('Content-Type', /json/)
+
+      expect(response.body).to.be.an('object')
+      expect(response.body).to.have.property('errors')
     })
   })
   describe('/DELETE/:id user', () => {
-    it('it should DELETE a user given the id', (done) => {
+    it('should DELETE a user given the id', async () => {
       const user = {
-        name: faker.random.words(),
+        name: faker.lorem.words(),
         email: faker.internet.email(),
-        password: faker.random.words(),
+        password: faker.lorem.words(),
         role: 'admin',
         urlTwitter: faker.internet.url(),
         urlGitHub: faker.internet.url(),
-        phone: faker.phone.phoneNumber(),
-        city: faker.random.words(),
-        country: faker.random.words()
+        phone: faker.phone.number(),
+        city: faker.lorem.words(),
+        country: faker.lorem.words()
       }
-      chai
-        .request(server)
+      // First create a user
+      const createResponse = await request(server)
         .post('/users')
         .set('Authorization', `Bearer ${tokens.admin}`)
         .send(user)
-        .end((err, res) => {
-          res.should.have.status(201)
-          res.body.should.be.a('object')
-          res.body.should.include.keys('_id', 'name', 'email', 'verification')
-          chai
-            .request(server)
-            .delete(`/users/${res.body._id}`)
-            .set('Authorization', `Bearer ${tokens.admin}`)
-            .end((error, result) => {
-              result.should.have.status(200)
-              result.body.should.be.a('object')
-              result.body.should.have.property('msg').eql('DELETED')
-              done()
-            })
-        })
+        .expect(201)
+        .expect('Content-Type', /json/)
+
+      expect(createResponse.body).to.be.an('object')
+      expect(createResponse.body).to.include.keys(
+        '_id',
+        'name',
+        'email',
+        'verification'
+      )
+
+      // Then delete it
+      const deleteResponse = await request(server)
+        .delete(`/users/${createResponse.body._id}`)
+        .set('Authorization', `Bearer ${tokens.admin}`)
+        .expect(200)
+        .expect('Content-Type', /json/)
+
+      expect(deleteResponse.body).to.be.an('object')
+      expect(deleteResponse.body).to.have.property('msg', 'DELETED')
     })
   })
 
-  after(() => {
-    createdID.forEach((id) => {
-      User.findByIdAndRemove(id, (err) => {
-        if (err) {
-          console.log(err)
-        }
-      })
-    })
+  after(async () => {
+    for (const id of createdID) {
+      try {
+        await User.findByIdAndDelete(id)
+      } catch (err) {
+        console.log(err)
+      }
+    }
   })
 })

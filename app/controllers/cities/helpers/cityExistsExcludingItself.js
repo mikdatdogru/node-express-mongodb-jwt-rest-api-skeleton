@@ -6,28 +6,26 @@ const { buildErrObject } = require('../../../middleware/utils')
  * @param {string} id - id of item
  * @param {string} name - name of item
  */
-const cityExistsExcludingItself = (id = '', name = '') => {
-  return new Promise((resolve, reject) => {
-    City.findOne(
-      {
-        name,
-        _id: {
-          $ne: id
-        }
-      },
-      (err, item) => {
-        if (err) {
-          return reject(buildErrObject(422, err.message))
-        }
-
-        if (item) {
-          return reject(buildErrObject(422, 'CITY_ALREADY_EXISTS'))
-        }
-
-        resolve(false)
+const cityExistsExcludingItself = async (id = '', name = '') => {
+  try {
+    const item = await City.findOne({
+      name,
+      _id: {
+        $ne: id
       }
-    )
-  })
+    })
+
+    if (item) {
+      throw buildErrObject(422, 'CITY_ALREADY_EXISTS')
+    }
+
+    return false
+  } catch (error) {
+    if (error.code) {
+      throw error
+    }
+    throw buildErrObject(422, error.message)
+  }
 }
 
 module.exports = { cityExistsExcludingItself }

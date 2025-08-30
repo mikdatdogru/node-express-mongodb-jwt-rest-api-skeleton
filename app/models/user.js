@@ -82,38 +82,46 @@ const UserSchema = new mongoose.Schema(
   }
 )
 
-const hash = (user, salt, next) => {
-  bcrypt.hash(user.password, salt, (error, newHash) => {
-    if (error) {
-      return next(error)
-    }
+const hash = async (user, salt) => {
+  try {
+    const newHash = await bcrypt.hash(user.password, salt)
     user.password = newHash
-    return next()
-  })
-}
-
-const genSalt = (user, SALT_FACTOR, next) => {
-  bcrypt.genSalt(SALT_FACTOR, (err, salt) => {
-    if (err) {
-      return next(err)
-    }
-    return hash(user, salt, next)
-  })
-}
-
-UserSchema.pre('save', function (next) {
-  const that = this
-  const SALT_FACTOR = 5
-  if (!that.isModified('password')) {
-    return next()
+    return user
+  } catch (error) {
+    throw error
   }
-  return genSalt(that, SALT_FACTOR, next)
+}
+
+const genSalt = async (user, SALT_FACTOR) => {
+  try {
+    const salt = await bcrypt.genSalt(SALT_FACTOR)
+    return await hash(user, salt)
+  } catch (error) {
+    throw error
+  }
+}
+
+UserSchema.pre('save', async function (next) {
+  try {
+    const that = this
+    const SALT_FACTOR = 5
+    if (!that.isModified('password')) {
+      return next()
+    }
+    await genSalt(that, SALT_FACTOR)
+    return next()
+  } catch (error) {
+    return next(error)
+  }
 })
 
-UserSchema.methods.comparePassword = function (passwordAttempt, cb) {
-  bcrypt.compare(passwordAttempt, this.password, (err, isMatch) =>
-    err ? cb(err) : cb(null, isMatch)
-  )
+UserSchema.methods.comparePassword = async function (passwordAttempt) {
+  try {
+    const isMatch = await bcrypt.compare(passwordAttempt, this.password)
+    return isMatch
+  } catch (error) {
+    throw error
+  }
 }
 UserSchema.plugin(mongoosePaginate)
 module.exports = mongoose.model('User', UserSchema)

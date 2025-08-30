@@ -1,4 +1,4 @@
-require('dotenv-safe').config()
+require('dotenv-flow').config()
 const { Seeder } = require('mongo-seeding')
 const path = require('path')
 const config = {

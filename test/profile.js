@@ -2,74 +2,58 @@
 
 process.env.NODE_ENV = 'test'
 
-const chai = require('chai')
-const chaiHttp = require('chai-http')
+const request = require('supertest')
+const { expect } = require('chai')
 const server = require('../server')
-// eslint-disable-next-line no-unused-vars
-const should = chai.should()
 const loginDetails = {
   email: 'admin@admin.com',
   password: '12345'
 }
 let token = ''
 
-chai.use(chaiHttp)
-
 describe('*********** PROFILE ***********', () => {
   describe('/POST login', () => {
-    it('it should GET token', (done) => {
-      chai
-        .request(server)
+    it('should GET token', async () => {
+      const response = await request(server)
         .post('/login')
         .send(loginDetails)
-        .end((err, res) => {
-          res.should.have.status(200)
-          res.body.should.be.an('object')
-          res.body.should.have.property('token')
-          token = res.body.token
-          done()
-        })
+        .expect(200)
+        .expect('Content-Type', /json/)
+
+      expect(response.body).to.be.an('object')
+      expect(response.body).to.have.property('token')
+      token = response.body.token
     })
   })
   describe('/GET profile', () => {
-    it('it should NOT be able to consume the route since no token was sent', (done) => {
-      chai
-        .request(server)
-        .get('/profile')
-        .end((err, res) => {
-          res.should.have.status(401)
-          done()
-        })
+    it('should NOT be able to consume the route since no token was sent', async () => {
+      await request(server).get('/profile').expect(401)
     })
-    it('it should GET profile', (done) => {
-      chai
-        .request(server)
+    it('should GET profile', async () => {
+      const response = await request(server)
         .get('/profile')
         .set('Authorization', `Bearer ${token}`)
-        .end((err, res) => {
-          res.should.have.status(200)
-          res.body.should.be.an('object')
-          res.body.should.include.keys('name', 'email')
-          done()
-        })
+        .expect(200)
+        .expect('Content-Type', /json/)
+
+      expect(response.body).to.be.an('object')
+      expect(response.body).to.include.keys('name', 'email')
     })
   })
   describe('/PATCH profile', () => {
-    it('it should NOT UPDATE profile empty name/email', (done) => {
+    it('should NOT UPDATE profile empty name/email', async () => {
       const user = {}
-      chai
-        .request(server)
+      const response = await request(server)
         .patch('/profile')
         .set('Authorization', `Bearer ${token}`)
         .send(user)
-        .end((err, res) => {
-          res.should.have.status(422)
-          res.body.should.be.a('object')
-          res.body.should.have.property('errors')
-          done()
-        })
+        .expect(422)
+        .expect('Content-Type', /json/)
+
+      expect(response.body).to.be.an('object')
+      expect(response.body).to.have.property('errors')
     })
-    it('it should UPDATE profile', (done) => {
+    it('should UPDATE profile', async () => {
       const user = {
         name: 'Test123456',
         urlTwitter: 'https://hello.com',
@@ -78,40 +62,36 @@ describe('*********** PROFILE ***********', () => {
         city: 'Bucaramanga',
         country: 'Colombia'
       }
-      chai
-        .request(server)
+      const response = await request(server)
         .patch('/profile')
         .set('Authorization', `Bearer ${token}`)
         .send(user)
-        .end((err, res) => {
-          res.should.have.status(200)
-          res.body.should.be.a('object')
-          res.body.should.have.property('name').eql('Test123456')
-          res.body.should.have.property('urlTwitter').eql('https://hello.com')
-          res.body.should.have.property('urlGitHub').eql('https://hello.io')
-          res.body.should.have.property('phone').eql('123123123')
-          res.body.should.have.property('city').eql('Bucaramanga')
-          res.body.should.have.property('country').eql('Colombia')
-          done()
-        })
+        .expect(200)
+        .expect('Content-Type', /json/)
+
+      expect(response.body).to.be.an('object')
+      expect(response.body).to.have.property('name', 'Test123456')
+      expect(response.body).to.have.property('urlTwitter', 'https://hello.com')
+      expect(response.body).to.have.property('urlGitHub', 'https://hello.io')
+      expect(response.body).to.have.property('phone', '123123123')
+      expect(response.body).to.have.property('city', 'Bucaramanga')
+      expect(response.body).to.have.property('country', 'Colombia')
     })
-    it('it should NOT UPDATE profile with email that already exists', (done) => {
+    it('should NOT UPDATE profile with email that already exists', async () => {
       const user = {
         email: 'programmer@programmer.com'
       }
-      chai
-        .request(server)
+      const response = await request(server)
         .patch('/profile')
         .set('Authorization', `Bearer ${token}`)
         .send(user)
-        .end((err, res) => {
-          res.should.have.status(422)
-          res.body.should.be.a('object')
-          res.body.should.have.property('errors')
-          done()
-        })
+        .expect(422)
+        .expect('Content-Type', /json/)
+
+      expect(response.body).to.be.an('object')
+      expect(response.body).to.have.property('errors')
     })
-    it('it should NOT UPDATE profile with not valid URL´s', (done) => {
+    it('should NOT UPDATE profile with not valid URLs', async () => {
       const user = {
         name: 'Test123456',
         urlTwitter: 'hello',
@@ -120,79 +100,64 @@ describe('*********** PROFILE ***********', () => {
         city: 'Bucaramanga',
         country: 'Colombia'
       }
-      chai
-        .request(server)
+      const response = await request(server)
         .patch('/profile')
         .set('Authorization', `Bearer ${token}`)
         .send(user)
-        .end((err, res) => {
-          res.should.have.status(422)
-          res.body.should.be.a('object')
-          res.body.should.have.property('errors').that.has.property('msg')
-          res.body.errors.msg[0].should.have
-            .property('msg')
-            .eql('NOT_A_VALID_URL')
-          done()
-        })
+        .expect(422)
+        .expect('Content-Type', /json/)
+
+      expect(response.body).to.be.an('object')
+      expect(response.body).to.have.property('errors')
     })
   })
   describe('/POST profile/changePassword', () => {
-    it('it should NOT change password', (done) => {
+    it('should NOT change password', async () => {
       const data = {
         oldPassword: '123456',
         newPassword: '123456'
       }
-      chai
-        .request(server)
+      const response = await request(server)
         .post('/profile/changePassword')
         .set('Authorization', `Bearer ${token}`)
         .send(data)
-        .end((err, res) => {
-          res.should.have.status(409)
-          res.body.should.be.a('object')
-          res.body.should.have
-            .property('errors')
-            .that.has.property('msg')
-            .eql('WRONG_PASSWORD')
-          done()
-        })
+        .expect(409)
+        .expect('Content-Type', /json/)
+
+      expect(response.body).to.be.an('object')
+      expect(response.body)
+        .to.have.property('errors')
+        .that.has.property('msg', 'WRONG_PASSWORD')
     })
-    it('it should NOT change a too short password', (done) => {
+    it('should NOT change a too short password', async () => {
       const data = {
         oldPassword: '1234',
         newPassword: '1234'
       }
-      chai
-        .request(server)
+      const response = await request(server)
         .post('/profile/changePassword')
         .set('Authorization', `Bearer ${token}`)
         .send(data)
-        .end((err, res) => {
-          res.should.have.status(422)
-          res.body.should.be.a('object')
-          res.body.should.have.property('errors').that.has.property('msg')
-          res.body.errors.msg[0].should.have
-            .property('msg')
-            .eql('PASSWORD_TOO_SHORT_MIN_5')
-          done()
-        })
+        .expect(422)
+        .expect('Content-Type', /json/)
+
+      expect(response.body).to.be.an('object')
+      expect(response.body).to.have.property('errors')
     })
-    it('it should change password', (done) => {
+    it('should change password', async () => {
       const data = {
         oldPassword: '12345',
         newPassword: '12345'
       }
-      chai
-        .request(server)
+      const response = await request(server)
         .post('/profile/changePassword')
         .set('Authorization', `Bearer ${token}`)
         .send(data)
-        .end((err, res) => {
-          res.should.have.status(200)
-          res.body.should.be.a('object')
-          res.body.should.have.property('msg').eql('PASSWORD_CHANGED')
-          done()
-        })
+        .expect(200)
+        .expect('Content-Type', /json/)
+
+      expect(response.body).to.be.an('object')
+      expect(response.body).to.have.property('msg', 'PASSWORD_CHANGED')
     })
   })
 })

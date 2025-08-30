@@ -1,4 +1,4 @@
-require('dotenv-safe').config()
+require('dotenv-flow').config()
 const initMongo = require('./config/mongo')
 const fs = require('fs')
 const modelsPath = `./app/models`
@@ -11,17 +11,14 @@ const models = fs.readdirSync(modelsPath).filter((file) => {
   return removeExtensionFromFile(file) !== 'index'
 })
 
-const deleteModelFromDB = (model) => {
-  return new Promise((resolve, reject) => {
+const deleteModelFromDB = async (model) => {
+  try {
     model = require(`./app/models/${model}`)
-    model.deleteMany({}, (err, row) => {
-      if (err) {
-        reject(err)
-      } else {
-        resolve(row)
-      }
-    })
-  })
+    const row = await model.deleteMany({})
+    return row
+  } catch (error) {
+    throw error
+  }
 }
 
 const clean = async () => {

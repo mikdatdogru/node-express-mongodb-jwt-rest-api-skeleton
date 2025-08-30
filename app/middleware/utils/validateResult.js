@@ -9,15 +9,18 @@ const { buildErrObject } = require('./buildErrObject')
  * @param {Object} next - next object
  */
 const validateResult = (req, res, next) => {
-  try {
-    validationResult(req).throw()
-    if (req.body.email) {
-      req.body.email = req.body.email.toLowerCase()
-    }
-    return next()
-  } catch (err) {
-    return handleError(res, buildErrObject(422, err.array()))
+  const errors = validationResult(req)
+  if (!errors.isEmpty()) {
+    const extractedErrors = errors.array().map((err) => ({
+      [err.param || err.path]: err.msg
+    }))
+    return handleError(res, buildErrObject(422, extractedErrors))
   }
+
+  if (req.body && req.body.email) {
+    req.body.email = req.body.email.toLowerCase()
+  }
+  return next()
 }
 
 module.exports = { validateResult }

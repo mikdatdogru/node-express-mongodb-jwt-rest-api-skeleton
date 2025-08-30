@@ -6,7 +6,7 @@ const { buildErrObject } = require('../../../middleware/utils')
  * Creates a new item in database
  * @param {Object} req - request object
  */
-const createItemInDb = ({
+const createItemInDb = async ({
   name = '',
   email = '',
   password = '',
@@ -15,7 +15,7 @@ const createItemInDb = ({
   city = '',
   country = ''
 }) => {
-  return new Promise((resolve, reject) => {
+  try {
     const user = new User({
       name,
       email,
@@ -26,20 +26,18 @@ const createItemInDb = ({
       country,
       verification: uuid.v4()
     })
-    user.save((err, item) => {
-      if (err) {
-        reject(buildErrObject(422, err.message))
-      }
+    let item = await user.save()
 
-      item = JSON.parse(JSON.stringify(item))
+    item = JSON.parse(JSON.stringify(item))
 
-      delete item.password
-      delete item.blockExpires
-      delete item.loginAttempts
+    delete item.password
+    delete item.blockExpires
+    delete item.loginAttempts
 
-      resolve(item)
-    })
-  })
+    return item
+  } catch (error) {
+    throw buildErrObject(422, error.message)
+  }
 }
 
 module.exports = { createItemInDb }

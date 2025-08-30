@@ -3,233 +3,207 @@
 process.env.NODE_ENV = 'test'
 
 const City = require('../app/models/city')
-const faker = require('faker')
-const chai = require('chai')
-const chaiHttp = require('chai-http')
+const { faker } = require('@faker-js/faker')
+const request = require('supertest')
+const { expect } = require('chai')
 const server = require('../server')
-// eslint-disable-next-line no-unused-vars
-const should = chai.should()
 const loginDetails = {
   email: 'admin@admin.com',
   password: '12345'
 }
 let token = ''
 const createdID = []
-const name = faker.random.words()
-const newName = faker.random.words()
-const repeatedName = faker.random.words()
-
-chai.use(chaiHttp)
+const name = faker.lorem.words()
+const newName = faker.lorem.words()
+const repeatedName = faker.lorem.words()
 
 describe('*********** CITIES ***********', () => {
   describe('/POST login', () => {
-    it('it should GET token', (done) => {
-      chai
-        .request(server)
+    it('should GET token', async () => {
+      const response = await request(server)
         .post('/login')
         .send(loginDetails)
-        .end((err, res) => {
-          res.should.have.status(200)
-          res.body.should.be.an('object')
-          res.body.should.have.property('token')
-          token = res.body.token
-          done()
-        })
+        .expect(200)
+        .expect('Content-Type', /json/)
+
+      expect(response.body).to.be.an('object')
+      expect(response.body).to.have.property('token')
+      token = response.body.token
     })
   })
 
   describe('/GET cities', () => {
-    it('it should NOT be able to consume the route since no token was sent', (done) => {
-      chai
-        .request(server)
-        .get('/cities')
-        .end((err, res) => {
-          res.should.have.status(401)
-          done()
-        })
+    it('should NOT be able to consume the route since no token was sent', async () => {
+      await request(server).get('/cities').expect(401)
     })
-    it('it should GET all the cities', (done) => {
-      chai
-        .request(server)
+    it('should GET all the cities', async () => {
+      const response = await request(server)
         .get('/cities')
         .set('Authorization', `Bearer ${token}`)
-        .end((err, res) => {
-          res.should.have.status(200)
-          res.body.should.be.an('object')
-          res.body.docs.should.be.a('array')
-          done()
-        })
+        .expect(200)
+        .expect('Content-Type', /json/)
+
+      expect(response.body).to.be.an('object')
+      expect(response.body.docs).to.be.an('array')
     })
-    it('it should GET the cities with filters', (done) => {
-      chai
-        .request(server)
+    it('should GET the cities with filters', async () => {
+      const response = await request(server)
         .get('/cities?filter=Bucaramanga&fields=name')
         .set('Authorization', `Bearer ${token}`)
-        .end((err, res) => {
-          res.should.have.status(200)
-          res.body.should.be.an('object')
-          res.body.docs.should.be.a('array')
-          res.body.docs.should.have.lengthOf(1)
-          res.body.docs[0].should.have.property('name').eql('Bucaramanga')
-          done()
-        })
+        .expect(200)
+        .expect('Content-Type', /json/)
+
+      expect(response.body).to.be.an('object')
+      expect(response.body.docs).to.be.an('array')
+      expect(response.body.docs).to.have.lengthOf(1)
+      expect(response.body.docs[0]).to.have.property('name', 'Bucaramanga')
     })
   })
 
   describe('/POST city', () => {
-    it('it should NOT POST a city without name', (done) => {
+    it('should NOT POST a city without name', async () => {
       const city = {}
-      chai
-        .request(server)
+      const response = await request(server)
         .post('/cities')
         .set('Authorization', `Bearer ${token}`)
         .send(city)
-        .end((err, res) => {
-          res.should.have.status(422)
-          res.body.should.be.a('object')
-          res.body.should.have.property('errors')
-          done()
-        })
+        .expect(422)
+        .expect('Content-Type', /json/)
+
+      expect(response.body).to.be.an('object')
+      expect(response.body).to.have.property('errors')
     })
-    it('it should POST a city ', (done) => {
+    it('should POST a city', async () => {
       const city = {
         name
       }
-      chai
-        .request(server)
+      const response = await request(server)
         .post('/cities')
         .set('Authorization', `Bearer ${token}`)
         .send(city)
-        .end((err, res) => {
-          res.should.have.status(201)
-          res.body.should.be.a('object')
-          res.body.should.include.keys('_id', 'name')
-          createdID.push(res.body._id)
-          done()
-        })
+        .expect(201)
+        .expect('Content-Type', /json/)
+
+      expect(response.body).to.be.an('object')
+      expect(response.body).to.include.keys('_id', 'name')
+      createdID.push(response.body._id)
     })
-    it('it should NOT POST a city that already exists', (done) => {
+    it('should NOT POST a city that already exists', async () => {
       const city = {
         name
       }
-      chai
-        .request(server)
+      const response = await request(server)
         .post('/cities')
         .set('Authorization', `Bearer ${token}`)
         .send(city)
-        .end((err, res) => {
-          res.should.have.status(422)
-          res.body.should.be.a('object')
-          res.body.should.have.property('errors')
-          done()
-        })
+        .expect(422)
+        .expect('Content-Type', /json/)
+
+      expect(response.body).to.be.an('object')
+      expect(response.body).to.have.property('errors')
     })
   })
 
   describe('/GET/:id city', () => {
-    it('it should GET a city by the given id', (done) => {
+    it('should GET a city by the given id', async () => {
       const id = createdID.slice(-1).pop()
-      chai
-        .request(server)
+      const response = await request(server)
         .get(`/cities/${id}`)
         .set('Authorization', `Bearer ${token}`)
-        .end((error, res) => {
-          res.should.have.status(200)
-          res.body.should.be.a('object')
-          res.body.should.have.property('name')
-          res.body.should.have.property('_id').eql(id)
-          done()
-        })
+        .expect(200)
+        .expect('Content-Type', /json/)
+
+      expect(response.body).to.be.an('object')
+      expect(response.body).to.have.property('name')
+      expect(response.body).to.have.property('_id', id)
     })
   })
 
   describe('/PATCH/:id city', () => {
-    it('it should UPDATE a city given the id', (done) => {
+    it('should UPDATE a city given the id', async () => {
       const id = createdID.slice(-1).pop()
-      chai
-        .request(server)
+      const response = await request(server)
         .patch(`/cities/${id}`)
         .set('Authorization', `Bearer ${token}`)
         .send({
           name: newName
         })
-        .end((error, res) => {
-          res.should.have.status(200)
-          res.body.should.be.a('object')
-          res.body.should.have.property('_id').eql(id)
-          res.body.should.have.property('name').eql(newName)
-          done()
-        })
+        .expect(200)
+        .expect('Content-Type', /json/)
+
+      expect(response.body).to.be.an('object')
+      expect(response.body).to.have.property('_id', id)
+      expect(response.body).to.have.property('name', newName)
     })
-    it('it should NOT UPDATE a city that already exists', (done) => {
+    it('should NOT UPDATE a city that already exists', async () => {
       const city = {
         name: repeatedName
       }
-      chai
-        .request(server)
+      // First create a city
+      const createResponse = await request(server)
         .post('/cities')
         .set('Authorization', `Bearer ${token}`)
         .send(city)
-        .end((err, res) => {
-          res.should.have.status(201)
-          res.body.should.be.a('object')
-          res.body.should.include.keys('_id', 'name')
-          res.body.should.have.property('name').eql(repeatedName)
-          createdID.push(res.body._id)
-          const anotherCity = {
-            name: newName
-          }
-          chai
-            .request(server)
-            .patch(`/cities/${createdID.slice(-1).pop()}`)
-            .set('Authorization', `Bearer ${token}`)
-            .send(anotherCity)
-            .end((error, result) => {
-              result.should.have.status(422)
-              result.body.should.be.a('object')
-              result.body.should.have.property('errors')
-              done()
-            })
-        })
+        .expect(201)
+        .expect('Content-Type', /json/)
+
+      expect(createResponse.body).to.be.an('object')
+      expect(createResponse.body).to.include.keys('_id', 'name')
+      expect(createResponse.body).to.have.property('name', repeatedName)
+      createdID.push(createResponse.body._id)
+
+      // Then try to update with existing name
+      const anotherCity = {
+        name: newName
+      }
+      const updateResponse = await request(server)
+        .patch(`/cities/${createdID.slice(-1).pop()}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send(anotherCity)
+        .expect(422)
+        .expect('Content-Type', /json/)
+
+      expect(updateResponse.body).to.be.an('object')
+      expect(updateResponse.body).to.have.property('errors')
     })
   })
 
   describe('/DELETE/:id city', () => {
-    it('it should DELETE a city given the id', (done) => {
+    it('should DELETE a city given the id', async () => {
       const city = {
         name
       }
-      chai
-        .request(server)
+      // First create a city
+      const createResponse = await request(server)
         .post('/cities')
         .set('Authorization', `Bearer ${token}`)
         .send(city)
-        .end((err, res) => {
-          res.should.have.status(201)
-          res.body.should.be.a('object')
-          res.body.should.include.keys('_id', 'name')
-          res.body.should.have.property('name').eql(name)
-          chai
-            .request(server)
-            .delete(`/cities/${res.body._id}`)
-            .set('Authorization', `Bearer ${token}`)
-            .end((error, result) => {
-              result.should.have.status(200)
-              result.body.should.be.a('object')
-              result.body.should.have.property('msg').eql('DELETED')
-              done()
-            })
-        })
+        .expect(201)
+        .expect('Content-Type', /json/)
+
+      expect(createResponse.body).to.be.an('object')
+      expect(createResponse.body).to.include.keys('_id', 'name')
+      expect(createResponse.body).to.have.property('name', name)
+
+      // Then delete it
+      const deleteResponse = await request(server)
+        .delete(`/cities/${createResponse.body._id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200)
+        .expect('Content-Type', /json/)
+
+      expect(deleteResponse.body).to.be.an('object')
+      expect(deleteResponse.body).to.have.property('msg', 'DELETED')
     })
   })
 
-  after(() => {
-    createdID.forEach((id) => {
-      City.findByIdAndRemove(id, (err) => {
-        if (err) {
-          console.log(err)
-        }
-      })
-    })
+  after(async () => {
+    for (const id of createdID) {
+      try {
+        await City.findByIdAndDelete(id)
+      } catch (err) {
+        console.log(err)
+      }
+    }
   })
 })

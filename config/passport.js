@@ -10,11 +10,11 @@ const JwtStrategy = require('passport-jwt').Strategy
  */
 const jwtExtractor = (req) => {
   let token = null
-  if (req.headers.authorization) {
+  if (req.headers && req.headers.authorization) {
     token = req.headers.authorization.replace('Bearer ', '').trim()
-  } else if (req.body.token) {
+  } else if (req.body && req.body.token) {
     token = req.body.token.trim()
-  } else if (req.query.token) {
+  } else if (req.query && req.query.token) {
     token = req.query.token.trim()
   }
   if (token) {
@@ -35,13 +35,13 @@ const jwtOptions = {
 /**
  * Login with JWT middleware
  */
-const jwtLogin = new JwtStrategy(jwtOptions, (payload, done) => {
-  User.findById(payload.data._id, (err, user) => {
-    if (err) {
-      return done(err, false)
-    }
+const jwtLogin = new JwtStrategy(jwtOptions, async (payload, done) => {
+  try {
+    const user = await User.findById(payload.data._id)
     return !user ? done(null, false) : done(null, user)
-  })
+  } catch (err) {
+    return done(err, false)
+  }
 })
 
 passport.use(jwtLogin)

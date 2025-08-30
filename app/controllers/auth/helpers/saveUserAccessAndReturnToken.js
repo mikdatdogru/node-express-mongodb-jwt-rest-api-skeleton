@@ -13,30 +13,24 @@ const {
  * @param {Object} req - request object
  * @param {Object} user - user object
  */
-const saveUserAccessAndReturnToken = (req = {}, user = {}) => {
-  return new Promise((resolve, reject) => {
+const saveUserAccessAndReturnToken = async (req = {}, user = {}) => {
+  try {
     const userAccess = new UserAccess({
       email: user.email,
       ip: getIP(req),
       browser: getBrowserInfo(req),
       country: getCountry(req)
     })
-    userAccess.save(async (err) => {
-      try {
-        if (err) {
-          return reject(buildErrObject(422, err.message))
-        }
-        const userInfo = await setUserInfo(user)
-        // Returns data with access token
-        resolve({
-          token: generateToken(user._id),
-          user: userInfo
-        })
-      } catch (error) {
-        reject(error)
-      }
-    })
-  })
+    await userAccess.save()
+    const userInfo = await setUserInfo(user)
+    // Returns data with access token
+    return {
+      token: generateToken(user._id),
+      user: userInfo
+    }
+  } catch (error) {
+    throw buildErrObject(422, error.message)
+  }
 }
 
 module.exports = { saveUserAccessAndReturnToken }

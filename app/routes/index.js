@@ -31,7 +31,7 @@ router.get('/', (req, res) => {
 /*
  * Handle 404 error
  */
-router.use('*', (req, res) => {
+router.use((req, res) => {
   res.status(404).json({
     errors: {
       msg: 'URL_NOT_FOUND'
